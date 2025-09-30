@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -43,21 +44,66 @@ class CatppuccinColors {
 // Mood Model - The "Brain" of our app
 class MoodModel with ChangeNotifier {
   String _currentMood = 'happy';
+  Color _backgroundColor = CatppuccinColors.yellow.withValues(alpha: 0.1);
+  final Map<String, int> _moodCounts = {
+    'happy': 0,
+    'sad': 0,
+    'excited': 0,
+  };
+  final List<String> _moodHistory = [];
+  final Random _random = Random();
+
   String get currentMood => _currentMood;
+  Color get backgroundColor => _backgroundColor;
+  Map<String, int> get moodCounts => Map.from(_moodCounts);
+  List<String> get moodHistory => List.from(_moodHistory);
+
+  void _addToHistory(String mood) {
+    _moodHistory.insert(0, mood); // Add to beginning
+    if (_moodHistory.length > 3) {
+      _moodHistory.removeLast(); // Keep only last 3
+    }
+  }
 
   void setHappy() {
     _currentMood = 'happy';
+    _backgroundColor = CatppuccinColors.yellow.withValues(alpha: 0.1);
+    _moodCounts['happy'] = (_moodCounts['happy'] ?? 0) + 1;
+    _addToHistory('happy');
     notifyListeners();
   }
 
   void setSad() {
     _currentMood = 'sad';
+    _backgroundColor = CatppuccinColors.blue.withValues(alpha: 0.1);
+    _moodCounts['sad'] = (_moodCounts['sad'] ?? 0) + 1;
+    _addToHistory('sad');
     notifyListeners();
   }
 
   void setExcited() {
     _currentMood = 'excited';
+    _backgroundColor = CatppuccinColors.pink.withValues(alpha: 0.1);
+    _moodCounts['excited'] = (_moodCounts['excited'] ?? 0) + 1;
+    _addToHistory('excited');
     notifyListeners();
+  }
+
+  void setRandomMood() {
+    final moods = ['happy', 'sad', 'excited'];
+    final randomMood = moods[_random.nextInt(moods.length)];
+    
+    switch (randomMood) {
+      case 'happy':
+        setHappy();
+        break;
+      case 'sad':
+        setSad();
+        break;
+      case 'excited':
+        setExcited();
+        break;
+    }
   }
 }
 
@@ -130,65 +176,73 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Mood Toggle Challenge',
-          style: TextStyle(
-            color: CatppuccinColors.text,
-            fontWeight: FontWeight.bold,
+    return Consumer<MoodModel>(
+      builder: (context, moodModel, child) {
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text(
+              'Mood Toggle Challenge',
+              style: TextStyle(
+                color: CatppuccinColors.text,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            centerTitle: true,
           ),
-        ),
-        centerTitle: true,
-      ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              CatppuccinColors.base,
-              CatppuccinColors.mantle,
-            ],
-          ),
-        ),
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text(
-                  'How are you feeling?',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w600,
-                    color: CatppuccinColors.text,
-                  ),
-                ),
-                const SizedBox(height: 40),
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: CatppuccinColors.surface0,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: CatppuccinColors.overlay0.withValues(alpha: 0.3),
-                        blurRadius: 20,
-                        offset: const Offset(0, 10),
+          body: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  CatppuccinColors.base,
+                  moodModel.backgroundColor,
+                ],
+              ),
+            ),
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text(
+                      'How are you feeling?',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w600,
+                        color: CatppuccinColors.text,
                       ),
-                    ],
-                  ),
-                  child: const MoodDisplay(),
+                    ),
+                    const SizedBox(height: 40),
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: CatppuccinColors.surface0,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: CatppuccinColors.overlay0.withValues(alpha: 0.3),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      child: const MoodDisplay(),
+                    ),
+                    const SizedBox(height: 50),
+                    const MoodButtons(),
+                    const SizedBox(height: 30),
+                    const MoodCounter(),
+                    const SizedBox(height: 20),
+                    const MoodHistory(),
+                  ],
                 ),
-                const SizedBox(height: 50),
-                const MoodButtons(),
-              ],
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
@@ -338,14 +392,20 @@ class MoodButtons extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 16),
-        _buildMoodButton(
-          context,
-          'Excited',
-          Icons.celebration,
-          CatppuccinColors.pink,
-          () {
-            Provider.of<MoodModel>(context, listen: false).setExcited();
-          },
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            _buildMoodButton(
+              context,
+              'Excited',
+              Icons.celebration,
+              CatppuccinColors.pink,
+              () {
+                Provider.of<MoodModel>(context, listen: false).setExcited();
+              },
+            ),
+            _buildRandomButton(context),
+          ],
         ),
       ],
     );
@@ -393,6 +453,248 @@ class MoodButtons extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildRandomButton(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: CatppuccinColors.mauve.withValues(alpha: 0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ElevatedButton.icon(
+        onPressed: () {
+          Provider.of<MoodModel>(context, listen: false).setRandomMood();
+        },
+        icon: const Icon(Icons.shuffle, color: CatppuccinColors.mauve),
+        label: const Text(
+          'Random 🤪',
+          style: TextStyle(
+            color: CatppuccinColors.mauve,
+            fontWeight: FontWeight.w600,
+            fontSize: 16,
+          ),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: CatppuccinColors.surface0,
+          foregroundColor: CatppuccinColors.mauve,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(
+              color: CatppuccinColors.mauve.withValues(alpha: 0.3),
+              width: 1,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Widget that displays mood history
+class MoodHistory extends StatelessWidget {
+  const MoodHistory({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<MoodModel>(
+      builder: (context, moodModel, child) {
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: CatppuccinColors.surface0,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: CatppuccinColors.surface1,
+              width: 1,
+            ),
+          ),
+          child: Column(
+            children: [
+              const Text(
+                'Recent Moods',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: CatppuccinColors.text,
+                ),
+              ),
+              const SizedBox(height: 16),
+              if (moodModel.moodHistory.isEmpty)
+                const Text(
+                  'No history yet',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: CatppuccinColors.subtext0,
+                    fontStyle: FontStyle.italic,
+                  ),
+                )
+              else
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: moodModel.moodHistory
+                      .asMap()
+                      .entries
+                      .map((entry) => _buildHistoryItem(entry.key, entry.value))
+                      .toList(),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildHistoryItem(int index, String mood) {
+    Color color;
+    IconData icon;
+    String label;
+
+    switch (mood) {
+      case 'happy':
+        color = CatppuccinColors.yellow;
+        icon = Icons.sentiment_very_satisfied;
+        label = 'Happy';
+        break;
+      case 'sad':
+        color = CatppuccinColors.blue;
+        icon = Icons.sentiment_very_dissatisfied;
+        label = 'Sad';
+        break;
+      case 'excited':
+        color = CatppuccinColors.pink;
+        icon = Icons.celebration;
+        label = 'Excited';
+        break;
+      default:
+        color = CatppuccinColors.text;
+        icon = Icons.help_outline;
+        label = 'Unknown';
+    }
+
+    return Column(
+      children: [
+        Container(
+          width: 50,
+          height: 50,
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.2),
+            borderRadius: BorderRadius.circular(25),
+            border: Border.all(
+              color: color.withValues(alpha: 0.5),
+              width: 2,
+            ),
+          ),
+          child: Icon(icon, color: color, size: 24),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          '${index + 1}',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: CatppuccinColors.subtext0,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 10,
+            color: CatppuccinColors.subtext0,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// Widget that displays mood selection counters
+class MoodCounter extends StatelessWidget {
+  const MoodCounter({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<MoodModel>(
+      builder: (context, moodModel, child) {
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: CatppuccinColors.surface0,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: CatppuccinColors.surface1,
+              width: 1,
+            ),
+          ),
+          child: Column(
+            children: [
+              const Text(
+                'Mood Statistics',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: CatppuccinColors.text,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _buildCounterItem(
+                    'Happy',
+                    moodModel.moodCounts['happy'] ?? 0,
+                    CatppuccinColors.yellow,
+                    Icons.sentiment_very_satisfied,
+                  ),
+                  _buildCounterItem(
+                    'Sad',
+                    moodModel.moodCounts['sad'] ?? 0,
+                    CatppuccinColors.blue,
+                    Icons.sentiment_very_dissatisfied,
+                  ),
+                  _buildCounterItem(
+                    'Excited',
+                    moodModel.moodCounts['excited'] ?? 0,
+                    CatppuccinColors.pink,
+                    Icons.celebration,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildCounterItem(String label, int count, Color color, IconData icon) {
+    return Column(
+      children: [
+        Icon(icon, color: color, size: 24),
+        const SizedBox(height: 8),
+        Text(
+          '$count',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: CatppuccinColors.subtext0,
+          ),
+        ),
+      ],
     );
   }
 }
