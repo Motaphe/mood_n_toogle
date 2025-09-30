@@ -200,44 +200,44 @@ class HomePage extends StatelessWidget {
                 ],
               ),
             ),
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text(
-                      'How are you feeling?',
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w600,
-                        color: CatppuccinColors.text,
-                      ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const SizedBox(height: 20),
+                  const Text(
+                    'How are you feeling?',
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w600,
+                      color: CatppuccinColors.text,
                     ),
-                    const SizedBox(height: 40),
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: CatppuccinColors.surface0,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: CatppuccinColors.overlay0.withValues(alpha: 0.3),
-                            blurRadius: 20,
-                            offset: const Offset(0, 10),
-                          ),
-                        ],
-                      ),
-                      child: const MoodDisplay(),
+                  ),
+                  const SizedBox(height: 40),
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: CatppuccinColors.surface0,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: CatppuccinColors.overlay0.withValues(alpha: 0.3),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 50),
-                    const MoodButtons(),
-                    const SizedBox(height: 30),
-                    const MoodCounter(),
-                    const SizedBox(height: 20),
-                    const MoodHistory(),
-                  ],
-                ),
+                    child: const MoodDisplay(),
+                  ),
+                  const SizedBox(height: 50),
+                  const MoodButtons(),
+                  const SizedBox(height: 30),
+                  const MoodCounter(),
+                  const SizedBox(height: 20),
+                  const MoodHistory(),
+                  const SizedBox(height: 20),
+                ],
               ),
             ),
           ),
